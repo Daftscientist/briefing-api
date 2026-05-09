@@ -81,11 +81,11 @@ export function validateReport(body: any): string | null {
   if (!body.device_id || typeof body.device_id !== 'string') return 'Missing device_id';
   if (!body.state || typeof body.state !== 'string') return 'Missing state';
   if (!ALLOWED_STATES.includes(body.state)) return `Invalid state: ${body.state}`;
-  if (!body.reported_at) return 'Missing reported_at';
+  
   
   const ts = new Date(body.reported_at).getTime();
-  if (isNaN(ts)) return 'Invalid reported_at timestamp';
-  if (ts > Date.now() + 120000) return 'Timestamp >2min in the future';
+  if (isNaN(ts)) body.reported_at = new Date().toISOString();
+  if (ts > Date.now() + 120000) body.reported_at = new Date().toISOString();
   
   return null;
 }
