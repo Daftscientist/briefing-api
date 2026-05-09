@@ -1,9 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache curl caddy
-
-# Install Tailscale
-RUN curl -fsSL https://tailscale.com/install.sh | sh
+RUN apk add --no-cache curl caddy tailscale
 
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY entrypoint.sh /entrypoint.sh
