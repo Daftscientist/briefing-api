@@ -6,15 +6,24 @@ COPY tsconfig.json ./
 COPY src/ ./src/
 RUN npm run build
 
-FROM node:22-alpine AS runner
+# Public-facing server (only health + token)
+FROM node:22-alpine AS public
 WORKDIR /app
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 briefing
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 briefing
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
-RUN mkdir -p /app/data && chown -R briefing:nodejs /app/data
 USER briefing
 EXPOSE 3001
-ENV NODE_ENV=production
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/public.js"]
+
+# Internal server (all routes with auth checks)
+FROM node:22-alpine AS internal
+WORKDIR /app
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 briefing
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+USER briefing
+EXPOSE 3002
+CMD ["node", "dist/internal.js"]

@@ -29,21 +29,41 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=,format=short
-
-      - name: Build and push
+      # Build and push the main API image (public + internal targets)
+      - name: Build and push API
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          target: public
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push the internal API image (with auth checks)
+      - name: Build and push internal API
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:internal-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:internal-${{ github.sha }}
+          target: internal
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push the gateway image
+      - name: Build and push gateway
+        uses: docker/build-push-action@v6
+        with:
+          context: ./gateway
+          file: ./gateway/Dockerfile.gateway
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-gateway:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-gateway:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
