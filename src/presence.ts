@@ -49,7 +49,9 @@ export interface CurrentPresence {
 // ── Auth keys ───────────────────────────────────────────────
 let deviceKeys: Record<string, string> = {};
 try {
-  deviceKeys = JSON.parse(process.env.DEVICE_KEYS || '{}');
+  let raw = '';
+try { raw = Buffer.from(process.env.DEVICE_KEYS_B64 || '', 'base64').toString(); } catch {}
+try { deviceKeys = JSON.parse(raw || '{}'); } catch {}
 } catch {}
 
 export function resolveDeviceFromKey(authKey: string): string | null {
