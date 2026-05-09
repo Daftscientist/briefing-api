@@ -7,8 +7,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner_lowercase }}/${{ github.event.repository.name }}
-  GATEWAY_IMAGE: ${{ github.repository_owner_lowercase }}/${{ github.event.repository.name }}-gateway
+  IMAGE_OWNER: daftscientist
+  IMAGE_NAME: daftscientist/briefing-api
+  GATEWAY_NAME: daftscientist/briefing-api-gateway
 
 jobs:
   build:
@@ -61,7 +62,7 @@ jobs:
           file: ./gateway/Dockerfile.gateway
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.GATEWAY_IMAGE }}:latest
-            ${{ env.REGISTRY }}/${{ env.GATEWAY_IMAGE }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.GATEWAY_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.GATEWAY_NAME }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
