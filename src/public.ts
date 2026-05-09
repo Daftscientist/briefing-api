@@ -1,7 +1,7 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { consumeBriefing, createBriefing } from './store.js';
+import { getBriefing, createBriefing } from './store.js';
 import { getDb } from './db.js';
 
 getDb();
@@ -21,7 +21,7 @@ app.get('/api/briefing/:token', (c) => {
   if (!token || token.split('-').length !== 7) {
     return c.json({ error: 'Invalid token format' }, 400);
   }
-  const briefing = consumeBriefing(token);
+  const briefing = getBriefing(token);
   if (!briefing) {
     return c.json({ error: 'Briefing not found, already viewed, or expired' }, 404);
   }
