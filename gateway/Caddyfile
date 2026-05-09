@@ -1,16 +1,11 @@
 {
-  # Don't attempt TLS — Tailscale Serve handles HTTPS
   auto_https off
   admin off
 }
 
 :4000 {
-  # Add the header that protects internal routes
-  header /api/* X-Tailscale-Authenticated "true"
-
-  # Proxy to the internal briefing service
   reverse_proxy briefing-internal:3002 {
-    # Pass through original headers
+    header_up X-Tailscale-Authenticated "true"
     header_up X-Forwarded-For {remote_host}
     header_up X-Forwarded-Proto "https"
   }
