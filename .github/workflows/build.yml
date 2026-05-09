@@ -7,7 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner_lowercase }}/${{ github.event.repository.name }}
+  GATEWAY_IMAGE: ${{ github.repository_owner_lowercase }}/${{ github.event.repository.name }}-gateway
 
 jobs:
   build:
@@ -29,8 +30,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build and push the main API image (public + internal targets)
-      - name: Build and push API
+      - name: Build and push public API
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -42,7 +42,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Build and push the internal API image (with auth checks)
       - name: Build and push internal API
         uses: docker/build-push-action@v6
         with:
@@ -55,7 +54,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Build and push the gateway image
       - name: Build and push gateway
         uses: docker/build-push-action@v6
         with:
@@ -63,7 +61,7 @@ jobs:
           file: ./gateway/Dockerfile.gateway
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-gateway:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-gateway:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.GATEWAY_IMAGE }}:latest
+            ${{ env.REGISTRY }}/${{ env.GATEWAY_IMAGE }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
