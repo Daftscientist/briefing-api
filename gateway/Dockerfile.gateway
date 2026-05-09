@@ -1,7 +1,0 @@
-FROM alpine:latest
-RUN apk add --no-cache curl caddy tailscale
-COPY Caddyfile /etc/caddy/Caddyfile
-COPY entrypoint.sh /entrypoint.sh
-VOLUME /var/lib/tailscale
-EXPOSE 4000
-CMD ["/entrypoint.sh"]
