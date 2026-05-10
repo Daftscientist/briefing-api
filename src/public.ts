@@ -53,6 +53,33 @@ app.post('/api/briefings', async (c) => {
 // Catch-all 404
 
 
+// ── SmartThings Auth URL (generates PKCE challenge) ──────
+import crypto from 'crypto';
+
+app.get('/auth/smartthings', async (c) => {
+  const clientId = process.env.ST_CLIENT_ID;
+  if (!clientId) return c.text('ST OAuth not configured', 500);
+
+  // Generate PKCE verifier and challenge
+  const verifier = crypto.randomBytes(64).toString('base64url');
+  const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
+  
+  const authUrl = 'https://api.smartthings.com/oauth/authorize?' + new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: 'https://api.daft.onl/auth/smartthings/callback',
+    response_type: 'code',
+    scope: 'r:devices:*',
+    state: verifier,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    client_type: 'LOCATION',
+    location_id: 'b1544ec2-a403-4c39-b9c5-780e6739f9e0',
+  });
+  
+  return c.redirect(authUrl);
+});
+
+
 // ── SmartThings OAuth + Lifecycle ────────────────────────────
 app.get('/auth/smartthings/callback', async (c) => {
   // Handle SmartThings lifecycle verification (PING)
@@ -69,12 +96,14 @@ app.get('/auth/smartthings/callback', async (c) => {
   if (!clientId || !clientSecret) return c.text('ST OAuth not configured', 500);
 
   try {
+    const verifier = c.req.query('state');
     const params = new URLSearchParams();
     params.set('client_id', clientId);
     params.set('client_secret', clientSecret);
     params.set('code', code);
     params.set('grant_type', 'authorization_code');
     params.set('redirect_uri', 'https://api.daft.onl/auth/smartthings/callback');
+    if (verifier) params.set('code_verifier', verifier);
     
     const res = await fetch('https://api.smartthings.com/oauth/token', {
       method: 'POST',
