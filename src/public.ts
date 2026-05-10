@@ -85,7 +85,9 @@ app.get('/auth/smartthings/callback', async (c) => {
     const text = await res.text();
     if (!text) return c.text('Empty response from SmartThings. App may still be in PENDING status.', 400);
     
-    const data = JSON.parse(text);
+    let data: any = {};
+    try { data = JSON.parse(text); }
+    catch { data = Object.fromEntries(new URLSearchParams(text)); }
     if (data.access_token) {
       const fs = await import('fs');
       fs.mkdirSync('/app/data', { recursive: true });
