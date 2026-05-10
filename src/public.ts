@@ -181,3 +181,16 @@ const port = parseInt(process.env.PORT || '3001');
 serve({ port, fetch: app.fetch }, () => {
   console.log(`Briefing API running on port ${port}`);
 });
+
+// Auto-poll TV state every 5 minutes
+const FIVE_MIN = 5 * 60 * 1000;
+setInterval(async () => {
+  try {
+    const info = await pollTV();
+    console.log('[auto] TV poll completed');
+  } catch (e: any) {
+    console.log('[auto] TV poll failed:', e?.message);
+  }
+}, FIVE_MIN);
+// Also poll immediately on startup (with delay for server to be ready)
+setTimeout(() => pollTV().catch(() => {}), 5000);
