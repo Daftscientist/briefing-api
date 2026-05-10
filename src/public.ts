@@ -60,12 +60,20 @@ app.post('/auth/smartthings', async (c) => {
     const body = await c.req.json();
     const lifecycle = body.lifecycle || body.evt;
     if (lifecycle === 'PING') {
-      return c.json({ statusCode: 200, lifecycle: 'PONG' });
+      return c.json({
+        statusCode: 200,
+        lifecycle: 'PONG',
+        confirmationUrl: 'https://api.daft.onl/auth/smartthings/confirm',
+      });
     }
     return c.json({ statusCode: 200 });
   } catch {
     return c.json({ statusCode: 200 });
   }
+});
+
+app.get('/auth/smartthings/confirm', (c) => {
+  return c.text('SmartThings app registered. You can close this page and authorize the app.');
 });
 
 app.get('/auth/smartthings', async (c) => {
