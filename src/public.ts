@@ -53,8 +53,14 @@ app.post('/api/briefings', async (c) => {
 // Catch-all 404
 
 
-// ── SmartThings OAuth ──────────────────────────────────────
+// ── SmartThings OAuth + Lifecycle ────────────────────────────
 app.get('/auth/smartthings/callback', async (c) => {
+  // Handle SmartThings lifecycle verification (PING)
+  const lifecycle = c.req.query('lifecycle');
+  if (lifecycle === 'PING') {
+    return c.json({ statusCode: 200 });
+  }
+  
   const code = c.req.query('code');
   if (!code) return c.text('Missing code', 400);
 
@@ -69,14 +75,18 @@ app.get('/auth/smartthings/callback', async (c) => {
     params.set('code', code);
     params.set('grant_type', 'authorization_code');
     params.set('redirect_uri', 'https://api.daft.onl/auth/smartthings/callback');
+    
     const res = await fetch('https://api.smartthings.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params,
     });
-    const data = await res.json();
+    
+    const text = await res.text();
+    if (!text) return c.text('Empty response from SmartThings. App may still be in PENDING status.', 400);
+    
+    const data = JSON.parse(text);
     if (data.access_token) {
-      // Save tokens to file
       const fs = await import('fs');
       fs.mkdirSync('/app/data', { recursive: true });
       fs.writeFileSync('/app/data/st-tokens.json', JSON.stringify({
@@ -93,31 +103,25 @@ app.get('/auth/smartthings/callback', async (c) => {
       const switchState = tvData?.components?.main?.switch?.switch?.value;
       const now = new Date().toISOString();
       if (switchState) {
-        // POST to presence
-        const presenceKey = process.env.DEVICE_KEYS ? 
-          JSON.parse(process.env.DEVICE_KEYS)?.google_tv || 'none' : 'none';
-        if (presenceKey !== 'none') {
-          await fetch('https://api.daft.onl/presence/report/' + presenceKey, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              device_id: 'google_tv',
-              state: switchState === 'on' ? 'playing_media' : 'idle',
-              reported_at: now,
-              last_interaction_at: tvData?.components?.main?.switch?.switch?.timestamp || now,
-            }),
-          });
-        }
+        const presenceKey = 'DSIijzrGuIRFtDRbAnlM5xZ8tbuD5mc7';
+        await fetch('https://api.daft.onl/presence/report/' + presenceKey, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            device_id: 'google_tv',
+            state: switchState === 'on' ? 'playing_media' : 'idle',
+            reported_at: now,
+            last_interaction_at: tvData?.components?.main?.switch?.switch?.timestamp || now,
+          }),
+        });
       }
       return c.text('✅ SmartThings authorized! TV is ' + (switchState === 'on' ? 'ON' : 'OFF'));
     }
     return c.text('Error: ' + JSON.stringify(data), 400);
-  } catch (err) {
+  } catch (err: any) {
     return c.text('Error: ' + String(err), 500);
   }
-});
-
-// ── Presence tracker ───────────────────────────────────────
+});// ── Presence tracker ───────────────────────────────────────
 import { resolveDeviceFromKey, validateReport, processReport, getCurrentPresence, checkRateLimit } from './presence.js';
 
 app.post('/presence/report/:auth_key', async (c) => {
