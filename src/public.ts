@@ -63,16 +63,16 @@ app.get('/auth/smartthings/callback', async (c) => {
   if (!clientId || !clientSecret) return c.text('ST OAuth not configured', 500);
 
   try {
+    const params = new URLSearchParams();
+    params.set('client_id', clientId);
+    params.set('client_secret', clientSecret);
+    params.set('code', code);
+    params.set('grant_type', 'authorization_code');
+    params.set('redirect_uri', 'https://api.daft.onl/auth/smartthings/callback');
     const res = await fetch('https://api.smartthings.com/oauth/token', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: 'https://api.daft.onl/auth/smartthings/callback',
-      }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
     });
     const data = await res.json();
     if (data.access_token) {
