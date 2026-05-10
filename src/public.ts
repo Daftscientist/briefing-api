@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getBriefing, createBriefing } from './store.js';
 import { getDb } from './db.js';
+import { runFullPoll, analyzeSleep, pollTV } from './poller.js';
 
 getDb();
 
@@ -152,6 +153,26 @@ app.post('/presence/report/:auth_key', async (c) => {
 app.get('/presence/current', (c) => {
   const presence = getCurrentPresence();
   return c.json(presence);
+});
+
+
+// ── API Poller (called by cron) ────────────────────────────
+app.post('/api/poll', async (c) => {
+  const results = await runFullPoll();
+  return c.json(results);
+});
+
+// ── Sleep analysis ─────────────────────────────────────────
+app.get('/api/analysis/sleep', async (c) => {
+  const presRes = await fetch('https://api.daft.onl/presence/current');
+  const presence = await presRes.json() as any;
+  return c.json(analyzeSleep(presence));
+});
+
+// ── TV state check (separate from full poll) ───────────────
+app.post('/api/poll/tv', async (c) => {
+  await pollTV();
+  return c.json({ ok: true });
 });
 
 app.all('*', (c) => c.json({ error: 'Not found' }, 404));
