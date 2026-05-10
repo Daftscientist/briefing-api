@@ -53,10 +53,23 @@ app.post('/api/briefings', async (c) => {
 // Catch-all 404
 
 
-// ── SmartThings Auth URL (generates PKCE challenge) ──────
-import crypto from 'crypto';
+
+// SmartThings lifecycle handler (PING verification)
+app.post('/auth/smartthings', async (c) => {
+  try {
+    const body = await c.req.json();
+    const lifecycle = body.lifecycle || body.evt;
+    if (lifecycle === 'PING') {
+      return c.json({ statusCode: 200, lifecycle: 'PONG' });
+    }
+    return c.json({ statusCode: 200 });
+  } catch {
+    return c.json({ statusCode: 200 });
+  }
+});
 
 app.get('/auth/smartthings', async (c) => {
+
   const clientId = process.env.ST_CLIENT_ID;
   if (!clientId) return c.text('ST OAuth not configured', 500);
 
