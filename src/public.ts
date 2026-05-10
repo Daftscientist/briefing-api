@@ -132,6 +132,7 @@ app.get('/auth/smartthings/callback', async (c) => {
 
   try {
     const verifier = c.req.query('state');
+    console.log('[smartthings] exchanging code...');
     const params = new URLSearchParams();
     params.set('client_id', clientId);
     params.set('client_secret', clientSecret);
@@ -146,6 +147,7 @@ app.get('/auth/smartthings/callback', async (c) => {
       body: params,
     });
     
+    console.log('[smartthings] token response status:', res.status);
     const text = await res.text();
     if (!text) return c.text('Empty response from SmartThings. App may still be in PENDING status.', 400);
     
