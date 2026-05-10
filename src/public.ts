@@ -74,8 +74,11 @@ app.get('/auth/smartthings', async (c) => {
   if (!clientId) return c.text('ST OAuth not configured', 500);
 
   // Generate PKCE verifier and challenge
-  const verifier = crypto.randomBytes(64).toString('base64url');
-  const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
+  const arr = new Uint8Array(64);
+  crypto.getRandomValues(arr);
+  const verifier = btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const challengeBuf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(challengeBuf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   
   const authUrl = 'https://api.smartthings.com/oauth/authorize?' + new URLSearchParams({
     client_id: clientId,
