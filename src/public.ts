@@ -62,15 +62,20 @@ export function getConfirmationUrl(): string | null { return pendingConfirmation
 app.post('/auth/smartthings', async (c) => {
   try {
     const body = await c.req.json();
-    const lifecycle = body.lifecycle || body.evt;
-    const confirmationUrl = body.confirmationUrl;
-    if (confirmationUrl) {
-      pendingConfirmationUrl = confirmationUrl;
-      console.log('[smartthings] confirmation URL received:', confirmationUrl);
+    
+    // Handle CONFIRMATION event (sent after apps:register)
+    if (body.messageType === 'CONFIRMATION' && body.confirmationData?.confirmationUrl) {
+      pendingConfirmationUrl = body.confirmationData.confirmationUrl;
+      console.log('[smartthings] CONFIRMATION URL:', pendingConfirmationUrl);
+      return c.json({ statusCode: 200 });
     }
+    
+    // Handle PING lifecycle event
+    const lifecycle = body.lifecycle || body.evt;
     if (lifecycle === 'PING') {
       return c.json({ statusCode: 200, lifecycle: 'PONG' });
     }
+    
     return c.json({ statusCode: 200 });
   } catch {
     return c.json({ statusCode: 200 });
