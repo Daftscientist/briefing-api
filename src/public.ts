@@ -55,16 +55,21 @@ app.post('/api/briefings', async (c) => {
 
 
 // SmartThings lifecycle handler (PING verification)
+// Store confirmation URL in memory
+let pendingConfirmationUrl: string | null = null;
+export function getConfirmationUrl(): string | null { return pendingConfirmationUrl; }
+
 app.post('/auth/smartthings', async (c) => {
   try {
     const body = await c.req.json();
     const lifecycle = body.lifecycle || body.evt;
+    const confirmationUrl = body.confirmationUrl;
+    if (confirmationUrl) {
+      pendingConfirmationUrl = confirmationUrl;
+      console.log('[smartthings] confirmation URL received:', confirmationUrl);
+    }
     if (lifecycle === 'PING') {
-      return c.json({
-        statusCode: 200,
-        lifecycle: 'PONG',
-        confirmationUrl: 'https://api.daft.onl/auth/smartthings/confirm',
-      });
+      return c.json({ statusCode: 200, lifecycle: 'PONG' });
     }
     return c.json({ statusCode: 200 });
   } catch {
@@ -73,7 +78,8 @@ app.post('/auth/smartthings', async (c) => {
 });
 
 app.get('/auth/smartthings/confirm', (c) => {
-  return c.text('SmartThings app registered. You can close this page and authorize the app.');
+  const url = pendingConfirmationUrl || 'Not yet received. Run smartthings apps:register to trigger.';
+  return c.text('Confirmation URL: ' + url + '\n\nCopy this URL into your browser, or run it from the CLI.');
 });
 
 app.get('/auth/smartthings', async (c) => {
